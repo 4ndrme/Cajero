@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CajeBank - Otro Valor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #ffffff; }
+        .bg-dots {
+            background-image: radial-gradient(#1b5e20 3px, transparent 3px);
+            background-size: 35px 35px;
+        }
+        .bg-stripes {
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #8ba891 4px, #8ba891 5px);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col font-sans overflow-hidden">
+
+    <!-- CONTENEDOR DE NOTIFICACIONES FLOTANTES (TOASTS) -->
+    <div id="toast-container" class="fixed top-8 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-3 w-full max-w-md pointer-events-none"></div>
+
+    <!-- HEADER -->
+    <header class="bg-[#194f2b] text-white px-8 py-4 flex items-center justify-between z-10 relative">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-full border-[3px] border-black flex items-center justify-center bg-[#194f2b]">
+                <span class="text-black text-3xl font-medium">$</span>
+            </div>
+            <h1 class="text-[2.5rem] font-bold tracking-wide">CajeBank</h1>
+        </div>
+        <div class="text-[1.3rem] tracking-wide uppercase">
+            Retiro Personalizado
+        </div>
+    </header>
+
+    <main class="flex-1 relative flex flex-col items-center justify-center pt-8">
+        <!-- DECORACIONES -->
+        <div class="absolute top-0 left-0 w-80 h-40 bg-stripes" style="clip-path: ellipse(100% 100% at 0% 0%);"></div>
+        <div class="absolute bottom-6 right-6 w-64 h-32 bg-dots opacity-80"></div>
+
+        <div class="bg-[#1b8a47] text-white text-[2rem] font-bold rounded-xl py-3 px-16 z-10 mb-6 shadow-md text-center">
+            Ingrese el monto a retirar
+        </div>
+
+        <div class="bg-[#194f2b] rounded-2xl p-8 w-full max-w-lg shadow-2xl z-10 border-4 border-[#1b8a47]">
+            <p class="text-green-300 text-center mb-4 text-xl tracking-wide uppercase font-bold">Debe ser múltiplo de $ 5.00</p>
+            
+            <input type="text" id="monto-input" readonly
+                class="w-full py-6 px-4 rounded-xl text-[#194f2b] text-5xl focus:outline-none mb-6 shadow-inner text-center font-bold tracking-widest cursor-default bg-white"
+                placeholder="$ 0">
+            
+            <div class="flex justify-between text-white text-sm opacity-80 mt-2">
+                <span>[ENTER] Confirmar</span>
+                <span>[ESC] Cancelar</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-[#194f2b] text-white px-8 py-3 flex items-center justify-between text-sm z-10 relative mt-auto">
+        <div class="text-xl font-bold">CajeBank</div>
+        <div class="text-right leading-tight">
+            <p>© 2026 Sistema de Cajero</p>
+            <p>Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- LÓGICA DE TECLADO Y NOTIFICACIONES -->
+    <script>
+        let currentInput = "";
+        const inputField = document.getElementById('monto-input');
+        let procesando = false;
+
+        // --- SISTEMA DE NOTIFICACIONES PROFESIONALES ---
+        function mostrarNotificacion(mensaje, tipo = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            // Colores basados en el resultado
+            const bgColor = tipo === 'success' ? 'bg-[#1b8a47]' : 'bg-red-600';
+            const icon = tipo === 'success' ? '✓' : '⚠';
+
+            toast.className = `${bgColor} text-white px-6 py-4 rounded-xl shadow-2xl border-2 border-black flex items-center gap-4 text-xl font-bold transform transition-all duration-300 translate-y-[-100%] opacity-0`;
+            toast.innerHTML = `<span class="text-2xl">${icon}</span> <span>${mensaje}</span>`;
+            
+            container.appendChild(toast);
+
+            // Animación de entrada (Slide down)
+            setTimeout(() => {
+                toast.classList.remove('translate-y-[-100%]', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            }, 10);
+
+            // Animación de salida y destrucción del elemento (Fade out)
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-100%]', 'opacity-0');
+                setTimeout(() => toast.remove(), 300); // Espera a que termine la animación css
+            }, 3500); // Desaparece en 3.5 segundos
+        }
+
+        document.addEventListener('keydown', function(event) {
+            const key = event.key;
+            if (procesando) return;
+
+            if (key === 'Backspace') {
+                event.preventDefault();
+                currentInput = currentInput.slice(0, -1);
+                inputField.value = currentInput ? `$ ${currentInput}` : "";
+            }
+            else if (key >= '0' && key <= '9') {
+                if (currentInput === "" && key === '0') return; 
+                
+                if (currentInput.length < 4) { 
+                    currentInput += key;
+                    inputField.value = `$ ${currentInput}`;
+                }
+            } 
+            else if (key === 'Enter') {
+                if (currentInput.length > 0) {
+                    const monto = parseInt(currentInput);
+                    
+                    if (monto % 5 !== 0) {
+                        mostrarNotificacion("El monto debe ser múltiplo de $5.00 (Ej: 15, 20, 35)", "error");
+                        currentInput = "";
+                        inputField.value = "";
+                        return;
+                    }
+
+                    procesando = true;
+                    
+                    fetch('/api/procesar_retiro', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ monto: monto })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            mostrarNotificacion(data.message, "success");
+                            // Esperar a que el usuario lea la notificación antes de redirigir
+                            setTimeout(() => {
+                                window.location.href = '/saldo_movimientos'; 
+                            }, 2500);
+                        } else {
+                            mostrarNotificacion(data.message, "error");
+                            procesando = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        mostrarNotificacion("Fallo de conexión con el servidor.", "error");
+                        procesando = false;
+                    });
+                }
+            } 
+            else if (key === 'Escape') {
+                window.location.href = '/retirar';
+            }
+        });
+    </script>
+</body>
+</html>

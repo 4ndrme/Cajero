@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CajeBank - Pagar Servicios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #ffffff; }
+        .bg-dots {
+            background-image: radial-gradient(#1b5e20 3px, transparent 3px);
+            background-size: 35px 35px;
+        }
+        .bg-stripes {
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #8ba891 4px, #8ba891 5px);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col font-sans overflow-hidden">
+
+    <div id="toast-container" class="fixed top-8 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-3 w-full max-w-md pointer-events-none"></div>
+
+    <header class="bg-[#194f2b] text-white px-8 py-4 flex items-center justify-between z-10 relative">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-full border-[3px] border-black flex items-center justify-center bg-[#194f2b]">
+                <span class="text-black text-3xl font-medium">$</span>
+            </div>
+            <h1 class="text-[2.5rem] font-bold tracking-wide">CajeBank</h1>
+        </div>
+        <div class="text-[1.3rem] tracking-wide uppercase">
+            Pago de Servicios
+        </div>
+    </header>
+
+    <main class="flex-1 relative flex flex-col items-center justify-center pt-8 w-full">
+        <div class="absolute top-0 left-0 w-80 h-40 bg-stripes" style="clip-path: ellipse(100% 100% at 0% 0%);"></div>
+        <div class="absolute bottom-6 right-6 w-64 h-32 bg-dots opacity-80"></div>
+
+        <div id="titulo-fase" class="bg-[#1b8a47] text-white text-[2rem] font-bold rounded-xl py-3 px-16 z-10 mb-6 shadow-md text-center">
+            Seleccione el servicio a pagar
+        </div>
+
+        <!-- FASE 1: Menú de Servicios -->
+        <div id="fase-1-contenedor" class="w-full flex justify-between items-center z-10 relative mt-4 px-12">
+            <div class="flex flex-col gap-6 w-[42vw] max-w-[600px]">
+                <button id="btn-1" class="bg-[#009c4a] text-white text-[2rem] font-bold py-4 px-6 w-full flex items-center transition-transform duration-150 active:scale-[0.98]">
+                    <span class="w-12 text-left">1.</span>
+                    <span class="flex-1 text-center pr-12">Energía Eléctrica (Luz)</span>
+                </button>
+                <button id="btn-2" class="bg-[#009c4a] text-white text-[2rem] font-bold py-4 px-6 w-full flex items-center transition-transform duration-150 active:scale-[0.98]">
+                    <span class="w-12 text-left">2.</span>
+                    <span class="flex-1 text-center pr-12">Agua Potable</span>
+                </button>
+            </div>
+            <div class="flex flex-col gap-6 w-[42vw] max-w-[600px]">
+                <button id="btn-3" class="bg-[#009c4a] text-white text-[2rem] font-bold py-4 px-6 w-full flex items-center transition-transform duration-150 active:scale-[0.98]">
+                    <span class="flex-1 text-center pl-12">Internet / Telefonía</span>
+                    <span class="w-12 text-right">3.</span>
+                </button>
+                <button id="btn-4" class="bg-[#009c4a] text-white text-[2rem] font-bold py-4 px-6 w-full flex items-center transition-transform duration-150 active:scale-[0.98]">
+                    <span class="flex-1 text-center pl-12">Cancelar (Volver)</span>
+                    <span class="w-12 text-right">4.</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- FASE 2: Ingreso de Monto (Oculto por defecto) -->
+        <div id="fase-2-contenedor" class="hidden bg-[#194f2b] rounded-2xl p-8 w-full max-w-lg shadow-2xl z-10 border-4 border-[#1b8a47]">
+            <p id="subtitulo-servicio" class="text-green-300 text-center mb-4 text-xl tracking-wide uppercase font-bold">Ingrese el valor de la planilla</p>
+            
+            <input type="text" id="monto-input" readonly
+                class="w-full py-6 px-4 rounded-xl text-[#194f2b] text-5xl focus:outline-none mb-6 shadow-inner text-center font-bold tracking-widest cursor-default bg-white"
+                placeholder="$ 0">
+            
+            <div class="flex justify-between text-white text-sm opacity-80 mt-2">
+                <span>[ENTER] Confirmar Pago</span>
+                <span>[ESC] Cambiar Servicio</span>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-[#194f2b] text-white px-8 py-3 flex items-center justify-between text-sm z-10 relative mt-auto">
+        <div class="text-xl font-bold">CajeBank</div>
+        <div class="text-right leading-tight">
+            <p>© 2026 Sistema de Cajero</p>
+            <p>Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        let currentInput = "";
+        let faseActual = 1;
+        let servicioSeleccionado = "";
+        let procesando = false;
+
+        const inputField = document.getElementById('monto-input');
+        const tituloFase = document.getElementById('titulo-fase');
+        const subtituloServicio = document.getElementById('subtitulo-servicio');
+        const contenedorFase1 = document.getElementById('fase-1-contenedor');
+        const contenedorFase2 = document.getElementById('fase-2-contenedor');
+
+        function mostrarNotificacion(mensaje, tipo = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = tipo === 'success' ? 'bg-[#1b8a47]' : 'bg-red-600';
+            const icon = tipo === 'success' ? '✓' : '⚠';
+
+            toast.className = `${bgColor} text-white px-6 py-4 rounded-xl shadow-2xl border-2 border-black flex items-center gap-4 text-xl font-bold transform transition-all duration-300 translate-y-[-100%] opacity-0`;
+            toast.innerHTML = `<span class="text-2xl">${icon}</span> <span>${mensaje}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-[-100%]', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            }, 10);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-100%]', 'opacity-0');
+                setTimeout(() => toast.remove(), 300); 
+            }, 3500); 
+        }
+
+        function simulateButtonPress(buttonId) {
+            const btn = document.getElementById(buttonId);
+            if (btn) {
+                btn.classList.add('bg-[#00e676]');
+                setTimeout(() => { btn.classList.remove('bg-[#00e676]'); }, 150);
+            }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            const key = event.key;
+            if (procesando) return;
+
+            // Lógica para FASE 1 (Selección)
+            if (faseActual === 1) {
+                if (key >= '1' && key <= '4') {
+                    simulateButtonPress(`btn-${key}`);
+                    
+                    if (key === '4') {
+                        setTimeout(() => { window.location.href = '/menu'; }, 200);
+                        return;
+                    }
+
+                    // Determinar el servicio
+                    if (key === '1') servicioSeleccionado = "Luz";
+                    if (key === '2') servicioSeleccionado = "Agua";
+                    if (key === '3') servicioSeleccionado = "Internet";
+
+                    // Transición de interfaz
+                    setTimeout(() => {
+                        contenedorFase1.classList.add('hidden');
+                        contenedorFase2.classList.remove('hidden');
+                        tituloFase.innerText = `Pago de ${servicioSeleccionado}`;
+                        faseActual = 2;
+                    }, 200);
+                }
+                else if (key === 'Escape') {
+                    window.location.href = '/menu';
+                }
+            }
+            // Lógica para FASE 2 (Ingreso de monto)
+            else if (faseActual === 2) {
+                if (key === 'Backspace') {
+                    event.preventDefault();
+                    currentInput = currentInput.slice(0, -1);
+                    inputField.value = currentInput ? `$ ${currentInput}` : "";
+                }
+                else if ((key >= '0' && key <= '9') || key === '.') {
+                    // 1. Evitar múltiples puntos decimales
+                    if (key === '.' && currentInput.includes('.')) return;
+                    
+                    // 2. Si empieza digitando un punto, lo convertimos a "0."
+                    if (currentInput === "" && key === '.') {
+                        currentInput = "0.";
+                    } 
+                    // 3. Reemplazar un "0" inicial si se teclea otro número (evita "05")
+                    else if (currentInput === "0" && key >= '0' && key <= '9') {
+                        currentInput = key; 
+                    }
+                    else {
+                        // 4. Limitar estrictamente a 2 decimales
+                        if (currentInput.includes('.')) {
+                            const partes = currentInput.split('.');
+                            if (partes[1] && partes[1].length >= 2) return;
+                        }
+                        
+                        // 5. Límite general de longitud para no desbordar la pantalla (ej. 9999.99)
+                        if (currentInput.length < 7) { 
+                            currentInput += key;
+                        }
+                    }
+                    inputField.value = `$ ${currentInput}`;
+                } 
+                else if (key === 'Enter') {
+                    // Validar que no envíe strings vacíos o ceros absolutos ("0" o "0.")
+                    if (currentInput.length > 0 && currentInput !== '0' && currentInput !== '0.') {
+                        // USAR parseFloat EN LUGAR DE parseInt
+                        const monto = parseFloat(currentInput); 
+                        
+                        if (monto <= 0) {
+                            mostrarNotificacion("El monto debe ser mayor a $0.00", "error");
+                            return;
+                        }
+
+                        procesando = true;
+                        
+                        fetch('/api/procesar_pago_servicio', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                servicio: servicioSeleccionado,
+                                monto: monto 
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                mostrarNotificacion(data.message, "success");
+                                
+                                // Descarga del PDF
+                                const urlPDF = `/imprimir_recibo_servicio/${servicioSeleccionado}/${monto}`;
+                                const enlaceDescarga = document.createElement('a');
+                                enlaceDescarga.href = urlPDF;
+                                enlaceDescarga.download = '';
+                                document.body.appendChild(enlaceDescarga);
+                                enlaceDescarga.click();
+                                document.body.removeChild(enlaceDescarga);
+
+                                setTimeout(() => {
+                                    window.location.href = '/saldo_movimientos'; 
+                                }, 3000);
+                            } else {
+                                mostrarNotificacion(data.message, "error");
+                                procesando = false;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            mostrarNotificacion("Fallo de conexión.", "error");
+                            procesando = false;
+                        });
+                    }
+                } 
+                else if (key === 'Escape') {
+                    // Volver a Fase 1
+                    currentInput = "";
+                    inputField.value = "";
+                    contenedorFase2.classList.add('hidden');
+                    contenedorFase1.classList.remove('hidden');
+                    tituloFase.innerText = "Seleccione el servicio a pagar";
+                    faseActual = 1;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
