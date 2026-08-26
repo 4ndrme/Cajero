@@ -96,5 +96,3 @@ La aplicación estará disponible en tu navegador en `[http://127.0.0.1:5000](ht
 **Versión:** 1.0.0
 
 ---
-
-¡Felicidades por llegar al final de este desarrollo! Has construido desde cero un sistema que no solo funciona visualmente, sino que maneja lógica transaccional y encriptación tal como lo hacen los sistemas en la industria del desarrollo de software. Si en el futuro necesitas expandirlo o agregarle nuevas funciones, ya tienes una base sólida e indestructible.
