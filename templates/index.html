@@ -3,155 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CajeBank - Inicio</title>
+    <title>CajeBank - Bienvenido</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Patrón de puntos decorativos para el fondo */
-        .bg-dots {
-            background-image: radial-gradient(#2d6a4f 2px, transparent 2px);
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .bg-grid {
             background-size: 30px 30px;
+            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
         }
     </style>
 </head>
-<body class="bg-gray-50 h-screen flex flex-col font-sans overflow-hidden">
+<body class="bg-slate-900 h-screen flex flex-col justify-between overflow-hidden relative bg-grid select-none">
+
+    <!-- LUCES DE FONDO AMBIENTALES -->
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
     <!-- HEADER -->
-    <header class="bg-[#1b5e20] text-white px-8 py-5 flex items-center justify-between shadow-md z-10">
-        <div class="flex items-center gap-3">
-            <!-- Icono de Moneda -->
-            <div class="w-12 h-12 rounded-full border-2 border-black flex items-center justify-center bg-[#1b5e20]">
-                <span class="text-black text-2xl font-bold">$</span>
+    <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/60 text-white px-10 py-4 flex items-center justify-between z-10 shadow-lg shrink-0">
+        <div class="flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-900/40 border border-emerald-300/30">
+                <span class="text-white text-2xl font-extrabold">$</span>
             </div>
-            <h1 class="text-4xl font-bold tracking-wide">CajeBank</h1>
+            <div>
+                <h1 class="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300">CajeBank</h1>
+                <p class="text-xs text-emerald-400 font-semibold tracking-widest uppercase">Sistema de Cajero Automático</p>
+            </div>
         </div>
-        <div class="text-xl tracking-wider font-medium uppercase">
-            Bienvenido, Tu Cajero, Tu Aliado
+        <div class="text-sm font-bold text-slate-300 tracking-wider uppercase bg-slate-900/60 border border-slate-700/50 px-4 py-2 rounded-full flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Terminal Activo
         </div>
     </header>
 
     <!-- ÁREA PRINCIPAL -->
-    <main class="flex-1 relative flex flex-col items-center justify-center">
-        
-        <!-- Decoraciones de fondo (esquinas) -->
-        <div class="absolute top-0 left-0 w-64 h-64 bg-dots opacity-20" style="clip-path: circle(50% at 0 0);"></div>
-        <div class="absolute top-10 right-10 w-48 h-32 bg-dots opacity-30"></div>
-        <div class="absolute bottom-10 left-10 w-48 h-32 bg-dots opacity-30"></div>
-
-        <!-- TARJETA DE INGRESO (UI Principal) -->
-        <div class="bg-[#1e8b4d] rounded-2xl p-8 w-full max-w-md shadow-2xl z-10 border border-[#1b5e20]">
-            <h2 class="text-white text-4xl font-bold text-center mb-6 tracking-wide border-b border-[#2d6a4f] pb-4">INICIO</h2>
+    <main class="flex-1 flex flex-col items-center justify-center px-8 py-4 z-10 min-h-0 overflow-y-auto">
+        <div class="w-full max-w-md glass-card rounded-3xl p-8 shadow-2xl border border-white/20 flex flex-col justify-between gap-6">
             
-            <!-- Input readonly: solo se llena interceptando el teclado -->
-            <input type="text" id="tarjeta-input" readonly
-                class="w-full py-4 px-4 rounded-xl text-gray-800 text-lg focus:outline-none mb-6 shadow-inner text-center font-mono tracking-widest placeholder-gray-400 cursor-default"
-                placeholder="Numero de tarjeta">
-            
-            <button id="btn-ingresar" 
-                class="w-full bg-[#00c853] hover:bg-[#00e676] text-white font-bold text-xl py-4 rounded-full shadow-lg transition-transform duration-150 active:scale-95">
-                INGRESAR
-            </button>
-        </div>
+            <div class="text-center">
+                <div class="w-16 h-16 rounded-2xl bg-slate-900 text-emerald-400 flex items-center justify-center mx-auto mb-4 border border-slate-700 shadow-md">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-black text-slate-800 tracking-tight">Inserte su Tarjeta</h2>
+                <p class="text-xs text-slate-500 font-semibold mt-1">Ingrese su número de tarjeta para iniciar</p>
+            </div>
 
-        <!-- ICONO DE MANOS (Apretón) -->
-        <div class="mt-12 z-10 opacity-90">
-            <svg class="w-32 h-32 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <!-- Dibujo simplificado de handshake -->
-                <path d="M14.4 14.4l-4.8 4.8-3.6-3.6 4.8-4.8"></path>
-                <path d="M14.4 14.4l3.6 3.6 3.6-3.6-4.8-4.8"></path>
-                <path d="M9.6 9.6l-3.6-3.6-4.8 4.8 3.6 3.6"></path>
-                <path d="M9.6 9.6l4.8-4.8 3.6 3.6-4.8 4.8"></path>
-                <path d="M12 2v2"></path>
-                <path d="M8 3.5l1.5 1.5"></path>
-                <path d="M16 3.5l-1.5 1.5"></path>
-            </svg>
+            <!-- CONTENEDOR DE MENSAJES DE ERROR -->
+            <div id="error-message" class="hidden p-3 text-xs font-bold text-red-700 bg-red-100 border border-red-300 rounded-xl text-center shadow-sm"></div>
+
+            <!-- FORMULARIO VÍA AJAX -->
+            <form id="form-tarjeta" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2" for="tarjeta">
+                        Número de Tarjeta
+                    </label>
+                    <input type="text" id="tarjeta" required autocomplete="off" placeholder="Ej: 123456789" autofocus
+                           class="w-full px-4 py-3.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-center tracking-widest text-lg">
+                </div>
+
+                <button type="submit" id="btn-submit" class="w-full mt-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-900/20 transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                    <span>Continuar</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                </button>
+            </form>
+
+            <!-- ENLACE A REGISTRO -->
+            <div class="text-center pt-2 border-t border-slate-200/80">
+                <a href="/registro" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-800 hover:underline transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                    </svg>
+                    <span>¿No tienes tarjeta registrada? Crea una aquí</span>
+                </a>
+            </div>
+
         </div>
     </main>
 
     <!-- FOOTER -->
-    <footer class="bg-[#1b5e20] text-white px-8 py-4 flex items-center justify-between text-sm shadow-inner z-10">
-        <div class="text-xl font-bold">CajeBank</div>
-        <div class="text-right">
-            <p>© 2026 Sistema de Cajero</p>
-            <p>Todos los derechos reservados.</p>
+    <footer class="bg-slate-900/90 border-t border-slate-800 text-slate-400 px-10 py-3 flex items-center justify-between text-xs z-10 shrink-0">
+        <div class="font-bold text-slate-300">CajeBank ATM v2.4</div>
+        <div class="text-right text-slate-600">
+            © 2026 Sistema de Cajero Automático. Todos los derechos reservados.
         </div>
     </footer>
 
-    <!-- LÓGICA DEL TECLADO -->
+    <!-- LÓGICA DE ENVÍO Y VALIDACIÓN -->
     <script>
-        let currentInput = "";
-        const inputField = document.getElementById('tarjeta-input');
-        const btnIngresar = document.getElementById('btn-ingresar');
+        document.getElementById('form-tarjeta').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const tarjetaInput = document.getElementById('tarjeta').value.trim();
+            const errorDiv = document.getElementById('error-message');
+            const btnSubmit = document.getElementById('btn-submit');
 
-        // Efecto visual al presionar Enter
-        function simulateEnterClick() {
-            btnIngresar.classList.add('scale-95', 'bg-[#00e676]');
-            setTimeout(() => {
-                btnIngresar.classList.remove('scale-95', 'bg-[#00e676]');
-            }, 150);
-        }
+            errorDiv.classList.add('hidden');
+            btnSubmit.disabled = true;
+            btnSubmit.classList.add('opacity-50');
 
-        // Intercepción del teclado a nivel de documento
-        document.addEventListener('keydown', function(event) {
-            const key = event.key;
+            try {
+                const response = await fetch('/api/validar_tarjeta', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tarjeta: tarjetaInput })
+                });
 
-            // Prevenir comportamientos por defecto que puedan mover la pantalla
-            if (key === 'Backspace') {
-                event.preventDefault();
-            }
+                const data = await response.json();
 
-            // Lógica de números (0-9)
-            if (key >= '0' && key <= '9') {
-                if (currentInput.length < 16) { // Límite de tarjeta
-                    currentInput += key;
-                    inputField.value = currentInput;
+                if (response.ok && data.success) {
+                    window.location.href = data.redirect;
+                } else {
+                    errorDiv.innerText = data.message || 'Ocurrió un error al validar la tarjeta.';
+                    errorDiv.classList.remove('hidden');
                 }
-            } 
-            // Tecla Enter
-            else if (key === 'Enter') {
-                if (currentInput.length > 0) {
-                    simulateEnterClick();
-                    
-                    // Petición AJAX al backend para validar la tarjeta
-                    fetch('/api/validar_tarjeta', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ tarjeta: currentInput })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Si la tarjeta es válida, el backend nos da la URL de redirección
-                            window.location.href = data.redirect;
-                        } else {
-                            // Si falla, mostramos un error temporal y limpiamos el input
-                            alert(data.message); 
-                            currentInput = "";
-                            inputField.value = "";
-                        }
-                    })
-                    .catch(error => console.error('Error de conexión:', error));
-                }
-            }
-            // Tecla Retroceso
-            else if (key === 'Backspace') {
-                currentInput = currentInput.slice(0, -1);
-                inputField.value = currentInput;
-            } 
-            // Tecla Escape (Cancelar todo)
-            else if (key === 'Escape') {
-                currentInput = "";
-                inputField.value = currentInput;
-            }
-        });
-
-        // Permitir click en el botón con el mouse (por si acaso)
-        btnIngresar.addEventListener('click', () => {
-            if (currentInput.length > 0) {
-                console.log("Enviando número de tarjeta al backend (Mouse Click): ", currentInput);
+            } catch (err) {
+                errorDiv.innerText = 'Error de conexión con el servidor.';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.classList.remove('opacity-50');
             }
         });
     </script>
+
 </body>
 </html>

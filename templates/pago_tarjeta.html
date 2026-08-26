@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CajeBank - Pago de Tarjeta de Crédito</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 h-screen flex flex-col font-sans overflow-hidden">
+
+    <div id="toast-container" class="fixed top-8 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-3 w-full max-w-md pointer-events-none"></div>
+
+    <header class="bg-[#1b5e20] text-white px-8 py-5 flex items-center justify-between shadow-md z-10">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full border-2 border-black flex items-center justify-center bg-[#1b5e20]">
+                <span class="text-black text-2xl font-bold">$</span>
+            </div>
+            <h1 class="text-4xl font-bold tracking-wide">CajeBank</h1>
+        </div>
+        <div class="text-xl tracking-wider font-medium uppercase">Pago Tarjeta de Crédito</div>
+    </header>
+
+    <main class="flex-1 relative flex flex-col items-center justify-center px-12">
+        <div class="bg-[#1e8b4d] text-white text-3xl font-bold px-12 py-3 rounded-2xl mb-8 shadow-md z-10">
+            Ingrese el monto a pagar
+        </div>
+
+        <div class="bg-[#194f2b] rounded-2xl p-8 w-full max-w-lg shadow-2xl z-10 border-4 border-[#1b8a47]">
+            <input type="text" id="monto-input" readonly
+                class="w-full py-6 px-4 rounded-xl text-[#194f2b] text-5xl focus:outline-none mb-6 shadow-inner text-center font-bold tracking-widest bg-white"
+                placeholder="$ 0.00">
+            
+            <div class="flex justify-between text-white text-sm opacity-80 mt-2">
+                <span>[ENTER] Confirmar Pago</span>
+                <span>[ESC] Cancelar</span>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-[#1b5e20] text-white px-8 py-4 flex items-center justify-between text-sm shadow-inner z-10">
+        <div class="text-xl font-bold">CajeBank</div>
+        <div class="text-right">
+            <p>© 2026 Sistema de Cajero</p>
+            <p>Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        let currentInput = "";
+        let procesando = false;
+        const inputField = document.getElementById('monto-input');
+
+        function mostrarNotificacion(mensaje, tipo = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = tipo === 'success' ? 'bg-[#1b8a47]' : 'bg-red-600';
+            const icon = tipo === 'success' ? '✓' : '⚠';
+
+            toast.className = `${bgColor} text-white px-6 py-4 rounded-xl shadow-2xl border-2 border-black flex items-center gap-4 text-xl font-bold transform transition-all duration-300 translate-y-[-100%] opacity-0`;
+            toast.innerHTML = `<span class="text-2xl">${icon}</span> <span>${mensaje}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-[-100%]', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            }, 10);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-100%]', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        document.addEventListener('keydown', function(event) {
+            const key = event.key;
+            if (procesando) return;
+
+            if (key === 'Escape') {
+                window.location.href = '/menu';
+                return;
+            }
+
+            if (key === 'Backspace') {
+                event.preventDefault();
+                currentInput = currentInput.slice(0, -1);
+                inputField.value = currentInput ? `$ ${currentInput}` : "";
+            }
+            else if ((key >= '0' && key <= '9') || key === '.') {
+                if (key === '.' && currentInput.includes('.')) return;
+                
+                if (currentInput === "" && key === '.') {
+                    currentInput = "0.";
+                } else if (currentInput === "0" && key >= '0' && key <= '9') {
+                    currentInput = key;
+                } else {
+                    if (currentInput.includes('.')) {
+                        const partes = currentInput.split('.');
+                        if (partes[1] && partes[1].length >= 2) return;
+                    }
+                    if (currentInput.length < 7) {
+                        currentInput += key;
+                    }
+                }
+                inputField.value = `$ ${currentInput}`;
+            } 
+            else if (key === 'Enter') {
+                if (currentInput.length > 0 && currentInput !== '0' && currentInput !== '0.') {
+                    const monto = parseFloat(currentInput);
+                    
+                    if (monto <= 0) {
+                        mostrarNotificacion("El monto debe ser mayor a $0.00", "error");
+                        return;
+                    }
+
+                    procesando = true;
+
+                    fetch('/api/procesar_pago_tarjeta', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ monto: monto })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            mostrarNotificacion(data.message, "success");
+                            
+                            const urlPDF = `/imprimir_recibo_tarjeta/${monto}`;
+                            const enlace = document.createElement('a');
+                            enlace.href = urlPDF;
+                            enlace.download = '';
+                            document.body.appendChild(enlace);
+                            enlace.click();
+                            document.body.removeChild(enlace);
+
+                            setTimeout(() => {
+                                window.location.href = '/saldo_movimientos';
+                            }, 3000);
+                        } else {
+                            mostrarNotificacion(data.message, "error");
+                            procesando = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        mostrarNotificacion("Error de conexión.", "error");
+                        procesando = false;
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

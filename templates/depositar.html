@@ -3,154 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CajeBank - Depósito</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>CajeBank - Depósito de Efectivo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        body { background-color: #ffffff; }
-        .bg-dots {
-            background-image: radial-gradient(#1b5e20 3px, transparent 3px);
-            background-size: 35px 35px;
+        body {
+            background-color: #0b1329;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 24px 24px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .bg-stripes {
-            background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #8ba891 4px, #8ba891 5px);
+        .btn-accion {
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-accion:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
-<body class="h-screen flex flex-col font-sans overflow-hidden">
+<body class="flex flex-col min-h-screen justify-between m-0 p-0 text-slate-800">
 
-    <!-- CONTENEDOR DE NOTIFICACIONES FLOTANTES (TOASTS) -->
-    <div id="toast-container" class="fixed top-8 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-3 w-full max-w-md pointer-events-none"></div>
-
-    <!-- HEADER -->
-    <header class="bg-[#194f2b] text-white px-8 py-4 flex items-center justify-between z-10 relative">
-        <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-full border-[3px] border-black flex items-center justify-center bg-[#194f2b]">
-                <span class="text-black text-3xl font-medium">$</span>
+    <!-- Barra Superior -->
+    <header class="w-full px-8 py-5 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <div class="bg-[#10b981] text-white font-bold rounded-xl w-10 h-10 flex items-center justify-center text-xl shadow-lg">
+                $
             </div>
-            <h1 class="text-[2.5rem] font-bold tracking-wide">CajeBank</h1>
+            <div>
+                <h1 class="text-white text-2xl font-bold tracking-wide leading-none">CajeBank</h1>
+                <span class="text-xs text-[#10b981] font-semibold tracking-wider uppercase">RED DE CAJEROS MULTIBANCO</span>
+            </div>
         </div>
-        <div class="text-[1.3rem] tracking-wide uppercase">
-            Depósito de Efectivo
+        <div class="flex items-center space-x-2 bg-[#132238] border border-slate-700 px-4 py-2 rounded-full shadow-inner">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-xs font-semibold text-slate-200 tracking-wider">OPERATIVO</span>
         </div>
     </header>
 
-    <main class="flex-1 relative flex flex-col items-center justify-center pt-8">
-        <!-- DECORACIONES -->
-        <div class="absolute top-0 left-0 w-80 h-40 bg-stripes" style="clip-path: ellipse(100% 100% at 0% 0%);"></div>
-        <div class="absolute bottom-6 right-6 w-64 h-32 bg-dots opacity-80"></div>
-
-        <div class="bg-[#1b8a47] text-white text-[2rem] font-bold rounded-xl py-3 px-16 z-10 mb-6 shadow-md text-center">
-            Ingrese el monto a depositar
-        </div>
-
-        <div class="bg-[#194f2b] rounded-2xl p-8 w-full max-w-lg shadow-2xl z-10 border-4 border-[#1b8a47]">
-            <p class="text-green-300 text-center mb-4 text-xl tracking-wide uppercase font-bold">Introduzca los billetes en la ranura</p>
+    <!-- Contenedor Principal (Pantalla del Cajero) -->
+    <main class="flex-grow flex items-center justify-center px-4 py-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-8 md:p-10 border border-slate-100 flex flex-col items-center relative">
             
-            <input type="text" id="monto-input" readonly
-                class="w-full py-6 px-4 rounded-xl text-[#194f2b] text-5xl focus:outline-none mb-6 shadow-inner text-center font-bold tracking-widest cursor-default bg-white"
-                placeholder="$ 0">
-            
-            <div class="flex justify-between text-white text-sm opacity-80 mt-2">
-                <span>[ENTER] Confirmar</span>
-                <span>[ESC] Cancelar</span>
+            <!-- Etiqueta superior de sección -->
+            <div class="bg-[#e6f4ea] text-[#137333] font-semibold text-xs px-4 py-1.5 rounded-full uppercase tracking-wider mb-3">
+                DEPÓSITO DE EFECTIVO
             </div>
+
+            <!-- Título Principal -->
+            <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mb-6 text-center tracking-tight">
+                Ingrese el monto a depositar
+            </h2>
+
+            <!-- Alertas dinámicas -->
+            <div id="mensaje-alerta" class="hidden mb-6 px-6 py-3 rounded-xl text-white font-medium text-center shadow-md transition-all duration-300 max-w-md w-full"></div>
+
+            <!-- Caja Interactiva Estilo Ranura del Cajero -->
+            <div class="bg-[#0f3822] border-2 border-[#1b8a47] rounded-2xl p-6 w-full max-w-lg shadow-inner flex flex-col items-center mb-6">
+                
+                <span class="text-emerald-300 text-xs font-bold uppercase tracking-widest mb-4">
+                    INTRODUZCA LOS BILLETES EN LA RANURA
+                </span>
+
+                <!-- Input Numérico Profesional -->
+                <div class="relative w-full mb-6">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-6 text-3xl font-bold text-slate-400">$</span>
+                    <input type="number" id="monto" step="0.01" min="1" placeholder="0.00" autofocus
+                        class="w-full bg-white text-slate-900 text-3xl font-bold text-center py-4 pl-10 pr-6 rounded-xl border-2 border-slate-300 focus:border-emerald-500 focus:outline-none shadow-inner">
+                </div>
+
+                <!-- Teclas de Control Inferiores -->
+                <div class="flex justify-between w-full text-xs font-semibold text-emerald-200 px-2">
+                    <span>[ENTER] Confirmar</span>
+                    <span>[ESC] Cancelar</span>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex space-x-4 w-full max-w-lg">
+                <button onclick="cancelarOperacion()" class="btn-accion flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-md text-center">
+                    Cancelar (ESC)
+                </button>
+                <button onclick="procesarDeposito()" class="btn-accion flex-1 bg-[#1b8a47] hover:bg-[#146c38] text-white font-bold py-3.5 px-6 rounded-xl shadow-md text-center">
+                    Confirmar Depósito (ENTER)
+                </button>
+            </div>
+
+            <!-- Pie dentro de la tarjeta -->
+            <div class="text-xs text-slate-400 font-medium tracking-wide mt-6">
+                <span>Asegúrese de que los billetes no estén doblados ni rotos.</span>
+            </div>
+
         </div>
     </main>
 
-    <!-- FOOTER -->
-    <footer class="bg-[#194f2b] text-white px-8 py-3 flex items-center justify-between text-sm z-10 relative mt-auto">
-        <div class="text-xl font-bold">CajeBank</div>
-        <div class="text-right leading-tight">
-            <p>© 2026 Sistema de Cajero</p>
-            <p>Todos los derechos reservados.</p>
+    <!-- Pie de Página Institucional -->
+    <footer class="w-full px-8 py-4 flex justify-between items-center text-xs text-slate-400">
+        <div>
+            <span class="text-slate-300 font-semibold">CajeBank ATM v2.4</span>
+        </div>
+        <div>
+            <span>© 2026 Sistema de Cajero Automático. Todos los derechos reservados.</span>
         </div>
     </footer>
 
-    <!-- LÓGICA DE TECLADO Y NOTIFICACIONES -->
+    <!-- Lógica JavaScript -->
     <script>
-        let currentInput = "";
-        const inputField = document.getElementById('monto-input');
-        let procesando = false;
-
-        function mostrarNotificacion(mensaje, tipo = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            const bgColor = tipo === 'success' ? 'bg-[#1b8a47]' : 'bg-red-600';
-            const icon = tipo === 'success' ? '✓' : '⚠';
-
-            toast.className = `${bgColor} text-white px-6 py-4 rounded-xl shadow-2xl border-2 border-black flex items-center gap-4 text-xl font-bold transform transition-all duration-300 translate-y-[-100%] opacity-0`;
-            toast.innerHTML = `<span class="text-2xl">${icon}</span> <span>${mensaje}</span>`;
-            
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-[-100%]', 'opacity-0');
-                toast.classList.add('translate-y-0', 'opacity-100');
-            }, 10);
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-[-100%]', 'opacity-0');
-                setTimeout(() => toast.remove(), 300); 
-            }, 3500); 
+        function mostrarAlerta(mensaje, esExito = false) {
+            const alerta = document.getElementById('mensaje-alerta');
+            alerta.textContent = mensaje;
+            alerta.className = `mb-6 px-6 py-3 rounded-xl text-white font-medium text-center shadow-md transition-all duration-300 max-w-md w-full ${esExito ? 'bg-emerald-600' : 'bg-red-600'}`;
+            alerta.classList.remove('hidden');
         }
 
-        document.addEventListener('keydown', function(event) {
-            const key = event.key;
-            if (procesando) return;
+        async function procesarDeposito() {
+            const montoInput = document.getElementById('monto').value;
+            const monto = parseFloat(montoInput);
 
-            if (key === 'Backspace') {
-                event.preventDefault();
-                currentInput = currentInput.slice(0, -1);
-                inputField.value = currentInput ? `$ ${currentInput}` : "";
+            if (isNaN(monto) || monto <= 0) {
+                mostrarAlerta('Por favor ingrese un monto válido mayor a $0.00.', false);
+                return;
             }
-            else if (key >= '0' && key <= '9') {
-                if (currentInput === "" && key === '0') return; 
-                
-                if (currentInput.length < 5) { // Límite de depósito extendido a 5 dígitos si se desea
-                    currentInput += key;
-                    inputField.value = `$ ${currentInput}`;
-                }
-            } 
-            else if (key === 'Enter') {
-                if (currentInput.length > 0) {
-                    const monto = parseInt(currentInput);
-                    
-                    if (monto <= 0) {
-                        mostrarNotificacion("El monto debe ser mayor a 0", "error");
-                        return;
-                    }
 
-                    procesando = true;
-                    
-                    // Apuntamos al endpoint de depósito
-                    fetch('/api/procesar_deposito', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ monto: monto })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            mostrarNotificacion(data.message, "success");
-                            setTimeout(() => {
-                                window.location.href = '/saldo_movimientos'; 
-                            }, 2500);
-                        } else {
-                            mostrarNotificacion(data.message, "error");
-                            procesando = false;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        mostrarNotificacion("Fallo de conexión con el servidor.", "error");
-                        procesando = false;
-                    });
+            try {
+                const response = await fetch('/api/procesar_deposito', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ monto: monto })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    mostrarAlerta(data.message, true);
+                    setTimeout(() => {
+                        window.location.href = '/menu';
+                    }, 2000);
+                } else {
+                    mostrarAlerta(data.message, false);
                 }
-            } 
-            else if (key === 'Escape') {
-                window.location.href = '/menu';
+            } catch (error) {
+                mostrarAlerta('Error de conexión con el servidor.', false);
+            }
+        }
+
+        function cancelarOperacion() {
+            window.location.href = '/menu';
+        }
+
+        // Atajos de teclado físicos (Enter y Escape)
+        document.getElementById('monto').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                procesarDeposito();
+            } else if (event.key === 'Escape') {
+                cancelarOperacion();
             }
         });
     </script>

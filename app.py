@@ -1,96 +1,163 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
-from werkzeug.security import check_password_hash
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
+from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config, get_db_connection
 from fpdf import FPDF
 import io
-from flask import send_file
 from datetime import datetime
 
 app = Flask(__name__)
 app.config.from_object(Config)
+app.secret_key = 'tu_clave_secreta_super_segura'  # Indispensable para las sesiones
+
+# Vista del formulario de registro
+@app.route('/registro')
+def registro():
+    return render_template('registro.html')
+
+# API Endpoint para registrar cliente, cuenta y tarjeta
+@app.route('/api/registrar_tarjeta', methods=['POST'])
+def registrar_tarjeta():
+    data = request.get_json()
+    nombre = data.get('nombre')
+    cedula = data.get('cedula')
+    numero_tarjeta = str(data.get('tarjeta', '')).strip()
+    pin = str(data.get('pin', '')).strip()
+    saldo_inicial = float(data.get('saldo', 100.00))
+
+    if not nombre or not cedula or not numero_tarjeta or not pin:
+        return jsonify({'success': False, 'message': 'Todos los campos son obligatorios.'}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        # 1. Crear Cliente
+        cur.execute(
+            "INSERT INTO clientes (nombre, cedula) VALUES (%s, %s) RETURNING id",
+            (nombre, cedula)
+        )
+        cliente_id = cur.fetchone()[0]
+
+        # 2. Crear Cuenta
+        numero_cuenta = f"CTA-{numero_tarjeta}"
+        cur.execute(
+            "INSERT INTO cuentas (cliente_id, numero_cuenta, saldo) VALUES (%s, %s, %s) RETURNING id", 
+            (cliente_id, numero_cuenta, saldo_inicial)
+        )
+        cuenta_id = cur.fetchone()[0]
+
+        # 3. Crear Tarjeta
+        pin_hash = generate_password_hash(pin)
+        cur.execute(
+            "INSERT INTO tarjetas (cuenta_id, numero_tarjeta, pin_hash, estado, intentos_fallidos) VALUES (%s, %s, %s, 'Activa', 0)", 
+            (cuenta_id, numero_tarjeta, pin_hash)
+        )
+
+        conn.commit()
+        return jsonify({'success': True, 'message': '¡Tarjeta registrada e ingresada con éxito!'})
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'message': f'Error BD: {str(e)}'}), 500
+    finally:
+        cur.close()
+        conn.close()
 
 # 1. Pantalla de Inicio (Ingresar Tarjeta)
 @app.route('/')
 def index():
-    # Limpiamos cualquier sesión previa al volver al inicio
     session.clear()
     return render_template('index.html')
+
+# Vista de la pantalla para ingresar el PIN
+@app.route('/pin')
+def vista_pin():
+    if 'tarjeta_actual' not in session:
+        return redirect(url_for('index'))
+    return render_template('pin.html')
 
 # 2. API Endpoint para validar si la tarjeta existe
 @app.route('/api/validar_tarjeta', methods=['POST'])
 def validar_tarjeta():
     data = request.get_json()
-    numero_tarjeta = data.get('tarjeta')
+    numero_tarjeta = str(data.get('tarjeta', '')).strip()
+
+    if not numero_tarjeta:
+        return jsonify({'success': False, 'message': 'Ingrese un número de tarjeta.'}), 400
 
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, estado FROM tarjetas WHERE numero_tarjeta = %s", (numero_tarjeta,))
-    tarjeta = cur.fetchone()
-    cur.close()
-    conn.close()
 
-    if tarjeta:
+    try:
+        cur.execute("SELECT id, estado FROM tarjetas WHERE numero_tarjeta = %s", (numero_tarjeta,))
+        tarjeta = cur.fetchone()
+
+        if not tarjeta:
+            return jsonify({'success': False, 'message': 'Tarjeta no encontrada. Regístrela primero.'}), 404
+
         if tarjeta[1] == 'Bloqueada':
-            return jsonify({'success': False, 'message': 'Tarjeta bloqueada. Contacte a su banco.'}), 403
-        
-        # Guardamos el número de tarjeta temporalmente
+            return jsonify({'success': False, 'message': 'La tarjeta se encuentra bloqueada.'}), 403
+
+        # Guardamos unificada la sesión
         session['tarjeta_actual'] = numero_tarjeta
         return jsonify({'success': True, 'redirect': '/pin'})
-    else:
-        return jsonify({'success': False, 'message': 'Tarjeta no reconocida.'}), 404
 
-# 3. Pantalla de Ingreso de PIN
-@app.route('/pin')
-def pin():
-    # Seguridad: expulsa al usuario si no hay tarjeta validada
-    if 'tarjeta_actual' not in session:
-        return redirect(url_for('index'))
-    return render_template('pin.html')
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+    finally:
+        cur.close()
+        conn.close()
 
-# 4. API Endpoint para validar el PIN y manejar bloqueos
+# 4. API Endpoint Único para validar el PIN y manejar bloqueos
 @app.route('/api/validar_pin', methods=['POST'])
 def validar_pin():
     if 'tarjeta_actual' not in session:
         return jsonify({'success': False, 'message': 'Sesión expirada.'}), 401
 
     data = request.get_json()
-    pin_ingresado = data.get('pin')
+    pin_ingresado = str(data.get('pin', '')).strip()
     numero_tarjeta = session['tarjeta_actual']
 
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, pin_hash, intentos_fallidos FROM tarjetas WHERE numero_tarjeta = %s", (numero_tarjeta,))
-    tarjeta = cur.fetchone()
 
-    if not tarjeta:
-        return jsonify({'success': False, 'message': 'Error interno del servidor.'}), 500
+    try:
+        cur.execute("SELECT id, pin_hash, estado, intentos_fallidos FROM tarjetas WHERE numero_tarjeta = %s", (numero_tarjeta,))
+        tarjeta_data = cur.fetchone()
 
-    tarjeta_id, pin_hash, intentos = tarjeta
+        if not tarjeta_data:
+            return jsonify({'success': False, 'message': 'Tarjeta no encontrada.'}), 404
 
-    # Comparamos el PIN ingresado con el Hash
-    if check_password_hash(pin_hash, pin_ingresado):
-        cur.execute("UPDATE tarjetas SET intentos_fallidos = 0 WHERE id = %s", (tarjeta_id,))
-        conn.commit()
+        tarjeta_id, pin_hash, estado, intentos = tarjeta_data
+
+        if estado == 'Bloqueada':
+            return jsonify({'success': False, 'message': 'La tarjeta está bloqueada.'}), 403
+
+        if check_password_hash(pin_hash, pin_ingresado):
+            cur.execute("UPDATE tarjetas SET intentos_fallidos = 0 WHERE id = %s", (tarjeta_id,))
+            conn.commit()
+            
+            session['autenticado'] = True
+            return jsonify({'success': True, 'redirect': '/menu'})
+        else:
+            intentos += 1
+            if intentos >= 3:
+                cur.execute("UPDATE tarjetas SET intentos_fallidos = %s, estado = 'Bloqueada' WHERE id = %s", (intentos, tarjeta_id))
+                conn.commit()
+                session.clear()
+                return jsonify({'success': False, 'message': 'PIN incorrecto. Su tarjeta ha sido bloqueada por seguridad.'}), 403
+            else:
+                cur.execute("UPDATE tarjetas SET intentos_fallidos = %s WHERE id = %s", (intentos, tarjeta_id))
+                conn.commit()
+                restantes = 3 - intentos
+                return jsonify({'success': False, 'message': f'PIN incorrecto. Te quedan {restantes} intentos.'}), 400
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'message': f'Error en servidor: {str(e)}'}), 500
+    finally:
         cur.close()
         conn.close()
-        return jsonify({'success': True, 'redirect': '/menu'})
-    else:
-        intentos += 1
-        if intentos >= 3:
-            # Bloqueo al tercer intento fallido
-            cur.execute("UPDATE tarjetas SET estado = 'Bloqueada', intentos_fallidos = %s WHERE id = %s", (intentos, tarjeta_id))
-            conn.commit()
-            cur.close()
-            conn.close()
-            session.clear() 
-            return jsonify({'success': False, 'message': 'Demasiados intentos. Tarjeta BLOQUEADA por seguridad.'}), 403
-        else:
-            # Actualización del contador de intentos
-            cur.execute("UPDATE tarjetas SET intentos_fallidos = %s WHERE id = %s", (intentos, tarjeta_id))
-            conn.commit()
-            cur.close()
-            conn.close()
-            return jsonify({'success': False, 'message': f'PIN incorrecto. Intentos restantes: {3 - intentos}'}), 401
 
 # 5. Pantalla del Menú Principal
 @app.route('/menu')
@@ -106,11 +173,9 @@ def saldo_movimientos():
         return redirect(url_for('index'))
     
     numero_tarjeta = session['tarjeta_actual']
-    
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # 1. Obtener ID de cuenta y saldo
     cur.execute("""
         SELECT c.id, c.saldo 
         FROM cuentas c
@@ -126,11 +191,9 @@ def saldo_movimientos():
         
     cuenta_id, saldo_actual = resultado
     
-    # 2. Registrar la consulta como una transacción (Auditoría)
     cur.execute("INSERT INTO transacciones (cuenta_id, tipo, monto) VALUES (%s, 'Consulta', 0.00)", (cuenta_id,))
     conn.commit()
     
-    # 3. Obtener los últimos 5 movimientos
     cur.execute("""
         SELECT tipo, monto, fecha 
         FROM transacciones 
@@ -152,11 +215,9 @@ def imprimir_movimientos():
         return redirect(url_for('index'))
     
     numero_tarjeta = session['tarjeta_actual']
-    
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Obtener datos del cliente y su saldo
     cur.execute("""
         SELECT cl.nombre, c.numero_cuenta, c.saldo
         FROM clientes cl
@@ -166,7 +227,6 @@ def imprimir_movimientos():
     """, (numero_tarjeta,))
     cliente_info = cur.fetchone()
     
-    # Obtener el historial completo de movimientos
     cur.execute("""
         SELECT tipo, monto, fecha 
         FROM transacciones 
@@ -181,13 +241,11 @@ def imprimir_movimientos():
     if not cliente_info:
         return redirect(url_for('index'))
 
-    # --- CREACIÓN DEL PDF CON FPDF ---
     pdf = FPDF()
     pdf.add_page()
     
-    # Cabecera Corporativa
     pdf.set_font("Arial", 'B', 18)
-    pdf.set_text_color(25, 79, 43) # Verde CajeBank (#194f2b)
+    pdf.set_text_color(25, 79, 43)
     pdf.cell(200, 10, txt="CajeBank", ln=True, align='C')
     
     pdf.set_font("Arial", 'B', 12)
@@ -195,30 +253,26 @@ def imprimir_movimientos():
     pdf.cell(200, 10, txt="Estado de Cuenta y Movimientos", ln=True, align='C')
     pdf.ln(5)
     
-    # Datos del Cliente
     pdf.set_font("Arial", size=11)
     pdf.cell(200, 8, txt=f"Titular: {cliente_info[0]}", ln=True)
     pdf.cell(200, 8, txt=f"Nro. Cuenta: {cliente_info[1]}", ln=True)
     pdf.cell(200, 8, txt=f"Saldo Disponible: ${cliente_info[2]:.2f}", ln=True)
     pdf.ln(10)
     
-    # Cabecera de la Tabla
     pdf.set_font("Arial", 'B', 11)
-    pdf.set_fill_color(27, 138, 71) # Verde claro (#1b8a47)
+    pdf.set_fill_color(27, 138, 71)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(60, 10, "Fecha", border=1, fill=True, align='C')
     pdf.cell(70, 10, "Tipo de Movimiento", border=1, fill=True, align='C')
     pdf.cell(60, 10, "Monto", border=1, fill=True, align='C')
     pdf.ln()
     
-    # Filas de la Tabla
     pdf.set_font("Arial", size=11)
     pdf.set_text_color(0, 0, 0)
     for mov in movimientos:
         fecha_str = mov[2].strftime('%Y-%m-%d %H:%M')
         tipo = mov[0]
         monto = float(mov[1])
-        
         monto_str = f"- ${monto:.2f}" if tipo == 'Retiro' else (f"+ ${monto:.2f}" if tipo == 'Deposito' else f"${monto:.2f}")
         
         pdf.cell(60, 10, fecha_str, border=1, align='C')
@@ -226,7 +280,6 @@ def imprimir_movimientos():
         pdf.cell(60, 10, monto_str, border=1, align='C')
         pdf.ln()
 
-    # Retornar el PDF directamente en memoria sin guardarlo en disco
     pdf_output = pdf.output(dest='S').encode('latin1')
     return send_file(io.BytesIO(pdf_output), mimetype='application/pdf', as_attachment=True, download_name='CajeBank_Movimientos.pdf')
 
@@ -267,8 +320,7 @@ def procesar_retiro():
             return jsonify({'success': False, 'message': 'Error de cuenta.'}), 404
             
         cuenta_id = resultado[0]
-        # CORRECCIÓN AQUÍ: Convertimos el Decimal de PostgreSQL a float de Python
-        saldo_actual = float(resultado[1]) 
+        saldo_actual = float(resultado[1])
         
         if saldo_actual < monto_retiro:
             return jsonify({'success': False, 'message': 'Fondos insuficientes para esta transacción.'}), 400
@@ -283,8 +335,6 @@ def procesar_retiro():
         
     except Exception as e:
         conn.rollback()
-        # IMPRIMIR EL ERROR EN LA TERMINAL PARA NO ESTAR CIEGOS
-        print(f"CRITICAL ERROR EN RETIRO: {e}") 
         return jsonify({'success': False, 'message': 'Fallo del sistema. La transacción ha sido revertida.'}), 500
     finally:
         cur.close()
@@ -311,7 +361,6 @@ def procesar_deposito():
         return jsonify({'success': False, 'message': 'Sesión expirada.'}), 401
     
     data = request.get_json()
-    
     try:
         monto_deposito = float(data.get('monto'))
     except (TypeError, ValueError):
@@ -325,7 +374,6 @@ def procesar_deposito():
     cur = conn.cursor()
     
     try:
-        # Bloqueo transaccional
         cur.execute("""
             SELECT c.id, c.saldo 
             FROM cuentas c
@@ -339,12 +387,9 @@ def procesar_deposito():
             return jsonify({'success': False, 'message': 'Error de cuenta.'}), 404
             
         cuenta_id = resultado[0]
-        saldo_actual = float(resultado[1]) 
-        
-        # Operación matemática de suma
+        saldo_actual = float(resultado[1])
         nuevo_saldo = saldo_actual + monto_deposito
         
-        # Actualización e inserción en el historial
         cur.execute("UPDATE cuentas SET saldo = %s WHERE id = %s", (nuevo_saldo, cuenta_id))
         cur.execute("INSERT INTO transacciones (cuenta_id, tipo, monto) VALUES (%s, 'Deposito', %s)", (cuenta_id, monto_deposito))
         
@@ -353,7 +398,6 @@ def procesar_deposito():
         
     except Exception as e:
         conn.rollback()
-        print(f"CRITICAL ERROR EN DEPOSITO: {e}") 
         return jsonify({'success': False, 'message': 'Fallo del sistema. La transacción ha sido revertida.'}), 500
     finally:
         cur.close()
@@ -373,8 +417,7 @@ def procesar_pago_servicio():
         return jsonify({'success': False, 'message': 'Sesión expirada.'}), 401
     
     data = request.get_json()
-    servicio = data.get('servicio') # Ej: "Luz", "Agua", "Internet"
-    
+    servicio = data.get('servicio')
     try:
         monto_pago = float(data.get('monto'))
     except (TypeError, ValueError):
@@ -407,9 +450,7 @@ def procesar_pago_servicio():
             return jsonify({'success': False, 'message': 'Fondos insuficientes para pagar este servicio.'}), 400
         
         nuevo_saldo = saldo_actual - monto_pago
-        
-        # Generar nombre del movimiento, limitando a 20 caracteres por el esquema de BD
-        tipo_movimiento = f"Pago {servicio}"[:20] 
+        tipo_movimiento = f"Pago {servicio}"[:20]
         
         cur.execute("UPDATE cuentas SET saldo = %s WHERE id = %s", (nuevo_saldo, cuenta_id))
         cur.execute("INSERT INTO transacciones (cuenta_id, tipo, monto) VALUES (%s, %s, %s)", (cuenta_id, tipo_movimiento, monto_pago))
@@ -419,7 +460,6 @@ def procesar_pago_servicio():
         
     except Exception as e:
         conn.rollback()
-        print(f"CRITICAL ERROR EN PAGO DE SERVICIO: {e}") 
         return jsonify({'success': False, 'message': 'Fallo del sistema. Transacción revertida.'}), 500
     finally:
         cur.close()
@@ -435,7 +475,6 @@ def imprimir_recibo_servicio(servicio, monto):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Obtener los datos actuales del cliente para el recibo
     cur.execute("""
         SELECT cl.nombre, c.numero_cuenta, c.saldo
         FROM clientes cl
@@ -450,13 +489,11 @@ def imprimir_recibo_servicio(servicio, monto):
     if not cliente_info:
         return redirect(url_for('index'))
 
-    # --- CREACIÓN DEL COMPROBANTE PDF ---
     pdf = FPDF()
     pdf.add_page()
     
-    # Cabecera
     pdf.set_font("Arial", 'B', 18)
-    pdf.set_text_color(25, 79, 43) # Verde CajeBank
+    pdf.set_text_color(25, 79, 43)
     pdf.cell(200, 10, txt="CajeBank", ln=True, align='C')
     
     pdf.set_font("Arial", 'B', 14)
@@ -464,7 +501,6 @@ def imprimir_recibo_servicio(servicio, monto):
     pdf.cell(200, 10, txt="Comprobante de Pago de Servicio", ln=True, align='C')
     pdf.ln(10)
     
-    # Datos de la Transacción
     fecha_actual = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
     pdf.set_font("Arial", size=12)
@@ -473,26 +509,28 @@ def imprimir_recibo_servicio(servicio, monto):
     pdf.cell(200, 8, txt=f"Nro. de Cuenta: {cliente_info[1]}", ln=True)
     pdf.ln(5)
     
-    # Detalles del Cobro
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(200, 8, txt=f"Servicio Pagado: {servicio}", ln=True)
-    pdf.set_text_color(200, 0, 0) # Rojo para el débito
+    pdf.set_text_color(200, 0, 0)
     pdf.cell(200, 8, txt=f"Monto Debitado: ${float(monto):.2f}", ln=True)
     
-    # Saldo Restante
     pdf.set_text_color(0, 0, 0)
     pdf.ln(5)
     pdf.set_font("Arial", size=12)
     pdf.cell(200, 8, txt=f"Saldo Disponible: ${cliente_info[2]:.2f}", ln=True)
     
-    # Pie de página
     pdf.ln(20)
     pdf.set_font("Arial", 'I', 10)
     pdf.cell(200, 10, txt="Gracias por confiar en CajeBank. Tu cajero, tu aliado.", ln=True, align='C')
 
-    # Retornar el PDF en memoria
     pdf_output = pdf.output(dest='S').encode('latin1')
     return send_file(io.BytesIO(pdf_output), mimetype='application/pdf', as_attachment=True, download_name=f'Comprobante_{servicio}.pdf')
+
+# Logout
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
