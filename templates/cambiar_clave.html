@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CajeBank - Otro Valor</title>
+    <title>CajeBank - Cambio de Clave</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -32,7 +32,7 @@
             </div>
             <div>
                 <h1 class="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300">CajeBank</h1>
-                <p class="text-xs text-emerald-400 font-semibold tracking-widest uppercase">Red de Cajeros Multibanco</p>
+                <p class="text-xs text-emerald-400 font-semibold tracking-widest uppercase">Gestión de Seguridad</p>
             </div>
         </div>
         <div class="flex items-center gap-3 bg-slate-900/60 border border-slate-700/50 px-4 py-2 rounded-full text-xs font-semibold text-slate-300">
@@ -43,13 +43,13 @@
 
     <!-- ÁREA PRINCIPAL -->
     <main class="flex-1 flex flex-col items-center justify-center px-6 py-4 z-10">
-        <div class="w-full max-w-2xl glass-card rounded-3xl p-8 shadow-2xl border border-white/20 flex flex-col items-center relative">
+        <div class="w-full max-w-2xl glass-card rounded-3xl p-8 shadow-2xl border border-white/20 flex flex-col items-center relative transition-all duration-300">
             
             <div class="text-center mb-6">
-                <span class="text-xs font-bold uppercase tracking-widest text-emerald-700 bg-emerald-100 px-3.5 py-1.5 rounded-full">
-                    Retiro de Efectivo
+                <span id="badge-fase" class="text-xs font-bold uppercase tracking-widest text-emerald-700 bg-emerald-100 px-3.5 py-1.5 rounded-full">
+                    Paso 1: Validación de Identidad
                 </span>
-                <h2 class="text-3xl font-extrabold text-slate-800 mt-3">Ingrese el monto a retirar</h2>
+                <h2 id="titulo-fase" class="text-3xl font-extrabold text-slate-800 mt-3">Ingrese su número de cédula</h2>
             </div>
 
             <!-- CONTENEDOR DE MENSAJES -->
@@ -59,18 +59,17 @@
             <div class="bg-slate-900/80 border border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-inner flex flex-col items-center mb-6 relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-900 via-emerald-400 to-emerald-900"></div>
                 
-                <span class="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-4">
-                    Debe ser múltiplo de $ 5.00
+                <span id="subtitulo-fase" class="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-4">
+                    Identificación del Titular (10 dígitos)
                 </span>
 
                 <div class="relative w-full mb-4">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-6 text-3xl font-bold text-slate-400">$</span>
-                    <input type="text" id="monto" readonly placeholder="0"
-                        class="w-full bg-slate-50 text-slate-900 text-3xl font-bold text-center py-4 pl-10 pr-6 rounded-xl border-2 border-slate-300 focus:border-emerald-500 focus:outline-none shadow-inner">
+                    <input type="text" id="data-input" readonly placeholder="----------"
+                        class="w-full bg-slate-50 text-slate-900 text-3xl font-bold text-center py-4 px-6 rounded-xl border-2 border-slate-300 focus:border-emerald-500 focus:outline-none tracking-widest shadow-inner">
                 </div>
 
                 <div class="flex justify-between w-full text-xs font-semibold text-slate-400 px-2">
-                    <span>[ENTER] Confirmar</span>
+                    <span>[ENTER] Siguiente</span>
                     <span>[ESC] Cancelar</span>
                 </div>
             </div>
@@ -80,8 +79,8 @@
                 <button onclick="cancelarOperacion()" class="flex-1 bg-slate-100 hover:bg-red-50 border border-slate-200 hover:border-red-500 text-slate-700 hover:text-red-700 font-bold py-3.5 px-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 active:scale-[0.98]">
                     Cancelar (ESC)
                 </button>
-                <button onclick="procesarRetiro()" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.98]">
-                    Confirmar Retiro (ENTER)
+                <button id="btn-accion-principal" onclick="procesarPaso()" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.98]">
+                    Continuar (ENTER)
                 </button>
             </div>
 
@@ -96,11 +95,18 @@
         </div>
     </footer>
 
-    <!-- LÓGICA DE TECLADO Y AJAX -->
+    <!-- LÓGICA DE TECLADO Y MÁQUINA DE ESTADOS -->
     <script>
+        let faseActual = 1; // 1 = Cédula, 2 = Nuevo PIN
+        let cedulaGuardada = "";
         let currentInput = "";
         let procesando = false;
-        const inputField = document.getElementById('monto');
+
+        const inputField = document.getElementById('data-input');
+        const badgeFase = document.getElementById('badge-fase');
+        const tituloFase = document.getElementById('titulo-fase');
+        const subtituloFase = document.getElementById('subtitulo-fase');
+        const btnAccion = document.getElementById('btn-accion-principal');
 
         function mostrarAlerta(mensaje, esExito = false) {
             const alerta = document.getElementById('mensaje-alerta');
@@ -113,45 +119,87 @@
             alerta.classList.remove('hidden');
         }
 
-        async function procesarRetiro() {
-            if (procesando || currentInput === "") return;
-            
-            const monto = parseInt(currentInput);
-            
-            // Validación Frontend: Múltiplo de 5
-            if (isNaN(monto) || monto <= 0 || monto % 5 !== 0) {
-                mostrarAlerta('El monto debe ser múltiplo de $5.00 (Ej: 15, 20, 35)', false);
-                return;
+        function reiniciarAFase1() {
+            faseActual = 1;
+            cedulaGuardada = "";
+            currentInput = "";
+            inputField.type = "text";
+            inputField.placeholder = "----------";
+            inputField.value = "";
+            badgeFase.innerText = "Paso 1: Validación de Identidad";
+            badgeFase.className = "text-xs font-bold uppercase tracking-widest text-emerald-700 bg-emerald-100 px-3.5 py-1.5 rounded-full";
+            tituloFase.innerText = "Ingrese su número de cédula";
+            subtituloFase.innerText = "Identificación del Titular (10 dígitos)";
+            btnAccion.innerText = "Continuar (ENTER)";
+        }
+
+        async function procesarPaso() {
+            if (procesando) return;
+
+            // Transición de Fase 1 a Fase 2
+            if (faseActual === 1) {
+                if (currentInput.length !== 10) {
+                    mostrarAlerta('La cédula debe tener exactamente 10 dígitos.', false);
+                    return;
+                }
+
+                document.getElementById('mensaje-alerta').classList.add('hidden');
+                cedulaGuardada = currentInput;
+                currentInput = "";
+                inputField.value = "";
+                inputField.type = "password";
+                inputField.placeholder = "****";
+
+                badgeFase.innerText = "Paso 2: Nueva Clave";
+                badgeFase.className = "text-xs font-bold uppercase tracking-widest text-blue-700 bg-blue-100 px-3.5 py-1.5 rounded-full";
+                tituloFase.innerText = "Defina su nuevo PIN";
+                subtituloFase.innerText = "Clave Numérica de Seguridad (4 dígitos)";
+                btnAccion.innerText = "Actualizar Clave (ENTER)";
+                faseActual = 2;
             }
+            // Ejecución de la transacción en Fase 2
+            else if (faseActual === 2) {
+                if (currentInput.length !== 4) {
+                    mostrarAlerta('El nuevo PIN debe tener exactamente 4 dígitos.', false);
+                    return;
+                }
 
-            procesando = true;
+                procesando = true;
 
-            try {
-                const response = await fetch('/api/procesar_retiro', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ monto: monto })
-                });
+                try {
+                    const response = await fetch('/api/procesar_cambio_clave', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            cedula: cedulaGuardada, 
+                            nuevo_pin: currentInput 
+                        })
+                    });
 
-                const data = await response.json();
-                
-                if (data.success) {
-                    mostrarAlerta(data.message, true);
-                    setTimeout(() => {
-                        window.location.href = '/saldo_movimientos';
-                    }, 2500);
-                } else {
-                    mostrarAlerta(data.message, false);
+                    const data = await response.json();
+
+                    if (data.success) {
+                        mostrarAlerta(data.message, true);
+                        // Por seguridad de cajero, se cierra la sesión tras el cambio de clave
+                        setTimeout(() => {
+                            window.location.href = '/logout';
+                        }, 2500);
+                    } else {
+                        mostrarAlerta(data.message, false);
+                        setTimeout(() => {
+                            reiniciarAFase1();
+                            procesando = false;
+                        }, 2000);
+                    }
+                } catch (error) {
+                    mostrarAlerta('Error de conexión con el servidor.', false);
                     procesando = false;
                 }
-            } catch (error) {
-                mostrarAlerta('Error de conexión con el servidor.', false);
-                procesando = false;
             }
         }
 
         function cancelarOperacion() {
-            window.location.href = '/retirar'; // Retorna al submenú de montos fijos
+            window.location.href = '/menu';
         }
 
         // Intercepción global de teclado
@@ -161,24 +209,21 @@
 
             if (key === 'Escape') {
                 cancelarOperacion();
-            } 
+            }
             else if (key === 'Backspace') {
                 event.preventDefault();
                 currentInput = currentInput.slice(0, -1);
                 inputField.value = currentInput ? currentInput : "";
-            } 
+            }
             else if (key >= '0' && key <= '9') {
-                // Evitar ceros a la izquierda
-                if (currentInput === "" && key === '0') return; 
-                
-                // Limitar la longitud a 4 dígitos ($9999)
-                if (currentInput.length < 4) { 
+                const maxLen = (faseActual === 1) ? 10 : 4;
+                if (currentInput.length < maxLen) {
                     currentInput += key;
+                    inputField.value = currentInput;
                 }
-                inputField.value = currentInput;
-            } 
+            }
             else if (key === 'Enter') {
-                procesarRetiro();
+                procesarPaso();
             }
         });
     </script>

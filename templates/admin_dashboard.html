@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CajeBank - Panel de Administración</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .bg-grid { background-size: 30px 30px; background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px); }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); }
+    </style>
+</head>
+<body class="bg-slate-900 h-screen flex flex-col justify-between overflow-hidden relative bg-grid select-none">
+
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-cyan-600/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+    <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/60 text-white px-10 py-4 flex items-center justify-between z-10 shadow-lg shrink-0">
+        <div class="flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center shadow-lg border border-cyan-300/30">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path></svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300">CajeBank</h1>
+                <p class="text-xs text-cyan-400 font-semibold tracking-widest uppercase">Modo Privilegiado / Auditoría</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 bg-slate-900/60 border border-slate-700/50 px-4 py-2 rounded-full text-xs font-semibold text-slate-300">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse"></span>
+            <span>ADMINISTRADOR</span>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col items-center justify-center px-8 py-4 z-10 min-h-0 overflow-y-auto">
+        <div class="w-full max-w-7xl glass-card rounded-3xl p-8 shadow-2xl border border-white/20 flex flex-col justify-between gap-6">
+            
+            <!-- TARJETAS DE MÉTRICAS GLOBALES (Ahora 4 Columnas) -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-gradient-to-br from-emerald-700 to-emerald-900 rounded-2xl p-5 border border-emerald-500/30 shadow-lg relative overflow-hidden">
+                    <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                    <span class="text-[10px] font-bold text-emerald-200 uppercase tracking-wider">Efectivo Físico en Máquina</span>
+                    <div class="text-3xl font-extrabold text-white mt-2">${{ "%.2f"|format(efectivo_boveda) }}</div>
+                </div>
+                <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-inner">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Operaciones Digitales Totales</span>
+                    <div class="text-3xl font-extrabold text-white mt-2">{{ total_trx }}</div>
+                </div>
+                <div class="bg-gradient-to-br from-cyan-700 to-cyan-900 rounded-2xl p-5 border border-cyan-500/30 shadow-lg">
+                    <span class="text-[10px] font-bold text-cyan-200 uppercase tracking-wider">Histórico de Retiros</span>
+                    <div class="text-3xl font-extrabold text-white mt-2">${{ "%.2f"|format(total_retiros) }}</div>
+                </div>
+                <div class="bg-gradient-to-br from-blue-700 to-blue-900 rounded-2xl p-5 border border-blue-500/30 shadow-lg">
+                    <span class="text-[10px] font-bold text-blue-200 uppercase tracking-wider">Histórico de Depósitos</span>
+                    <div class="text-3xl font-extrabold text-white mt-2">${{ "%.2f"|format(total_depositos) }}</div>
+                </div>
+            </div>
+
+            <!-- PANELES DE CONTROL ADMINISTRATIVO -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+                <!-- SEGURIDAD: DESBLOQUEO -->
+                <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-inner flex flex-col gap-4">
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-cyan-400 uppercase">Desbloqueo Manual de Tarjeta</h3>
+                            <p class="text-[11px] text-slate-400 mt-1">Restablece los intentos fallidos a 0 y reactiva el plástico.</p>
+                        </div>
+                        <div class="flex w-full md:w-auto gap-3">
+                            <input type="text" id="tarjeta-desbloqueo" placeholder="Nro. Tarjeta" class="w-full md:w-48 bg-slate-900 text-white text-sm font-bold px-4 py-2.5 rounded-xl border border-slate-600 focus:border-cyan-500 focus:outline-none tracking-widest">
+                            <button onclick="desbloquearTarjeta()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all active:scale-[0.98]">
+                                Aplicar
+                            </button>
+                        </div>
+                    </div>
+                    <div id="mensaje-alerta-admin" class="hidden w-full p-3 text-xs font-bold rounded-xl text-center shadow-sm transition-all"></div>
+                </div>
+
+                <!-- HARDWARE: ABASTECIMIENTO -->
+                <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-inner flex flex-col gap-4">
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-emerald-400 uppercase">Abastecimiento de Bóveda</h3>
+                            <p class="text-[11px] text-slate-400 mt-1">Simula la inyección de billetes físicos en la caja fuerte del cajero.</p>
+                        </div>
+                        <div class="flex w-full md:w-auto gap-3">
+                            <input type="number" id="monto-recarga" placeholder="Ej: 10000" class="w-full md:w-32 bg-slate-900 text-white text-sm font-bold px-4 py-2.5 rounded-xl border border-slate-600 focus:border-emerald-500 focus:outline-none text-center">
+                            <button onclick="abastecerCajero()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all active:scale-[0.98] flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                Ingresar
+                            </button>
+                        </div>
+                    </div>
+                    <div id="mensaje-alerta-boveda" class="hidden w-full p-3 text-xs font-bold rounded-xl text-center shadow-sm transition-all"></div>
+                </div>
+            </div>
+
+            <!-- TABLA DE AUDITORÍA (ÚLTIMOS MOVIMIENTOS GLOBALES) -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 mt-2">
+                <h3 class="text-sm font-bold text-slate-800 uppercase mb-3 border-b border-slate-100 pb-2">Registro de Actividad Reciente</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="py-2 px-4 bg-slate-50 font-bold text-xs text-slate-500 uppercase tracking-wider border-b">Fecha y Hora</th>
+                                <th class="py-2 px-4 bg-slate-50 font-bold text-xs text-slate-500 uppercase tracking-wider border-b">Cliente</th>
+                                <th class="py-2 px-4 bg-slate-50 font-bold text-xs text-slate-500 uppercase tracking-wider border-b">Acción</th>
+                                <th class="py-2 px-4 bg-slate-50 font-bold text-xs text-slate-500 uppercase tracking-wider border-b text-right">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-slate-700 font-medium">
+                            {% for mov in recientes %}
+                            <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                                <td class="py-2 px-4">{{ mov[0].strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td class="py-2 px-4 text-slate-900 font-bold">{{ mov[1] }}</td>
+                                <td class="py-2 px-4">
+                                    <span class="px-2.5 py-1 rounded-md text-[11px] font-bold {% if mov[2] == 'Retiro' or 'Pago' in mov[2] %}bg-red-100 text-red-700{% elif mov[2] == 'Deposito' %}bg-emerald-100 text-emerald-700{% else %}bg-slate-200 text-slate-600{% endif %}">
+                                        {{ mov[2] }}
+                                    </span>
+                                </td>
+                                <td class="py-2 px-4 text-right font-extrabold">
+                                    {% if mov[3] == 0 %} ---- {% else %} ${{ "%.2f"|format(mov[3]) }} {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- DIRECTORIO DE CLIENTES REGISTRADOS -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mt-6">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Directorio de Clientes Registrados</h3>
+                <div class="overflow-x-auto max-h-64 overflow-y-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-slate-400 text-xs uppercase font-bold sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3 rounded-l-lg">Cliente</th>
+                                <th class="px-4 py-3">Cédula / Correo</th>
+                                <th class="px-4 py-3">Nro. Cuenta</th>
+                                <th class="px-4 py-3">Nro. Tarjeta</th>
+                                <th class="px-4 py-3 text-right">Saldo</th>
+                                <th class="px-4 py-3 rounded-r-lg text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for cliente in clientes %}
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-4 py-3 font-bold text-slate-800">{{ cliente[0] }}</td>
+                                <td class="px-4 py-3">
+                                    <div class="text-slate-800">{{ cliente[1] }}</div>
+                                    <div class="text-xs text-slate-400">{{ cliente[2] }}</div>
+                                </td>
+                                <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ cliente[3] }}</td>
+                                <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ cliente[4] }}</td>
+                                <td class="px-4 py-3 text-right font-bold text-emerald-600">${{ "%.2f"|format(cliente[5]) }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    {% if cliente[6] == 'Activa' %}
+                                        <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">Activa</span>
+                                    {% else %}
+                                        <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">Bloqueada</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="px-4 py-8 text-center text-slate-400 font-medium">No hay clientes registrados en el sistema actualmente.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- BOTONES DE ACCIÓN GLOBALES -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <a href="/descargar_excel" class="group flex items-center justify-between bg-slate-50 hover:bg-cyan-700 border border-slate-200 hover:border-cyan-600 p-3 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200">
+                    <span class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 group-hover:bg-cyan-900 text-cyan-400 group-hover:text-cyan-200 text-lg font-black transition-colors">1</span>
+                    <div class="flex items-center gap-3 pr-4">
+                        <span class="text-sm font-bold text-slate-800 group-hover:text-white transition-colors">Descargar Auditoría (.xlsx)</span>
+                    </div>
+                </a>
+
+                <a href="/logout" class="group flex items-center justify-between bg-slate-50 hover:bg-slate-700 border border-slate-200 hover:border-slate-600 p-3 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200">
+                    <div class="flex items-center gap-3 pl-4">
+                        <span class="text-sm font-bold text-slate-800 group-hover:text-white transition-colors">Cerrar Sesión</span>
+                    </div>
+                    <span class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 group-hover:bg-slate-900 text-slate-400 group-hover:text-white text-sm font-black transition-colors">ESC</span>
+                </a>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="bg-slate-900/90 border-t border-slate-800 text-slate-400 px-10 py-3 flex items-center justify-between text-xs z-10 shrink-0">
+        <div class="font-bold text-slate-300">CajeBank ATM v2.4</div>
+        <div class="text-right text-slate-600">
+            Módulo de Administración Segura.
+        </div>
+    </footer>
+
+    <script>
+        function mostrarAlertaDinamica(idContenedor, mensaje, esExito = false) {
+            const alerta = document.getElementById(idContenedor);
+            alerta.textContent = mensaje;
+            if (esExito) {
+                alerta.className = "w-full mt-2 p-3 text-xs font-bold text-cyan-900 bg-cyan-100 border border-cyan-300 rounded-xl text-center shadow-sm transition-all";
+            } else {
+                alerta.className = "w-full mt-2 p-3 text-xs font-bold text-red-700 bg-red-100 border border-red-300 rounded-xl text-center shadow-sm transition-all";
+            }
+            alerta.classList.remove('hidden');
+            setTimeout(() => { alerta.classList.add('hidden'); }, 3500);
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.target.tagName.toLowerCase() === 'input') {
+                if (event.key === 'Enter') {
+                    if (event.target.id === 'tarjeta-desbloqueo') desbloquearTarjeta();
+                    if (event.target.id === 'monto-recarga') abastecerCajero();
+                }
+                return; 
+            }
+
+            if (event.key === '1') {
+                window.location.href = '/descargar_excel';
+            } else if (event.key === 'Escape') {
+                window.location.href = '/logout';
+            }
+        });
+
+        async function desbloquearTarjeta() {
+            const inputTarjeta = document.getElementById('tarjeta-desbloqueo');
+            const numeroTarjeta = inputTarjeta.value.trim();
+
+            if (!numeroTarjeta) {
+                mostrarAlertaDinamica('mensaje-alerta-admin', "Ingrese el número de la tarjeta.", false);
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/desbloquear_tarjeta', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tarjeta: numeroTarjeta })
+                });
+
+                const data = await response.json();
+                mostrarAlertaDinamica('mensaje-alerta-admin', (data.success ? "ÉXITO: " : "ERROR: ") + data.message, data.success);
+                if (data.success) inputTarjeta.value = "";
+            } catch (error) {
+                mostrarAlertaDinamica('mensaje-alerta-admin', "Fallo de conexión.", false);
+            }
+        }
+
+        async function abastecerCajero() {
+            const inputMonto = document.getElementById('monto-recarga');
+            const monto = parseFloat(inputMonto.value);
+
+            if (isNaN(monto) || monto <= 0) {
+                mostrarAlertaDinamica('mensaje-alerta-boveda', "Ingrese un monto válido mayor a 0.", false);
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/abastecer_cajero', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ monto: monto })
+                });
+
+                const data = await response.json();
+                mostrarAlertaDinamica('mensaje-alerta-boveda', (data.success ? "ÉXITO: " : "ERROR: ") + data.message, data.success);
+                
+                if (data.success) {
+                    inputMonto.value = "";
+                    setTimeout(() => { window.location.reload(); }, 1500); // Recarga para ver métricas actualizadas
+                }
+            } catch (error) {
+                mostrarAlertaDinamica('mensaje-alerta-boveda', "Fallo de conexión.", false);
+            }
+        }
+    </script>
+</body>
+</html>

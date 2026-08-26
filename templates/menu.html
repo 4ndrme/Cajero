@@ -142,5 +142,66 @@
             }
         });
     </script>
+    <!-- MÓDULO DE SEGURIDAD Y UX (INACTIVIDAD Y SONIDO) -->
+    <script>
+        (function() {
+            // 1. Configuración del Temporizador (30 segundos para la simulación)
+            const TIEMPO_INACTIVIDAD = 30000; 
+            let temporizador;
+
+            function reiniciarTemporizador() {
+                clearTimeout(temporizador);
+                temporizador = setTimeout(() => {
+                    // Mostrar alerta de seguridad y redirigir
+                    alert("Por su seguridad, la sesión ha sido cerrada por inactividad.");
+                    window.location.href = '/logout';
+                }, TIEMPO_INACTIVIDAD);
+            }
+
+            // 2. Generador de Sonido (Beep de Cajero Automático)
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            let contextoAudio;
+
+            function reproducirBeep() {
+                if (!contextoAudio) {
+                    contextoAudio = new AudioContext();
+                }
+                if (contextoAudio.state === 'suspended') {
+                    contextoAudio.resume();
+                }
+
+                const oscilador = contextoAudio.createOscillator();
+                const ganancia = contextoAudio.createGain();
+
+                oscilador.type = 'sine';
+                oscilador.frequency.setValueAtTime(880, contextoAudio.currentTime); // Tono agudo A5
+                
+                ganancia.gain.setValueAtTime(0.05, contextoAudio.currentTime); // Volumen bajo y elegante
+                
+                oscilador.connect(ganancia);
+                ganancia.connect(contextoAudio.destination);
+                
+                oscilador.start();
+                oscilador.stop(contextoAudio.currentTime + 0.1); // Duración muy corta (100ms)
+            }
+
+            // 3. Captura global de eventos
+            function registrarInteraccion(e) {
+                // Solo pitar si es una tecla válida o un clic izquierdo
+                if (e.type === 'keydown' || (e.type === 'mousedown' && e.button === 0)) {
+                    reproducirBeep();
+                }
+                reiniciarTemporizador();
+            }
+
+            // Escuchar interacciones en todo el documento
+            document.addEventListener('keydown', registrarInteraccion);
+            document.addEventListener('mousedown', registrarInteraccion);
+            document.addEventListener('mousemove', reiniciarTemporizador); // El mousemove reinicia el tiempo, pero no pita
+
+            // Iniciar el temporizador al cargar la página
+            reiniciarTemporizador();
+        })();
+    </script>
 </body>
 </html>

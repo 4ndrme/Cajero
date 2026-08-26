@@ -3,16 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CajeBank - Registrar Tarjeta</title>
+    <title>CajeBank - Registro de Cliente</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .bg-grid { background-size: 30px 30px; background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px); }
-        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); }
+        .bg-grid {
+            background-size: 30px 30px;
+            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+        }
     </style>
 </head>
 <body class="bg-slate-900 h-screen flex flex-col justify-between overflow-hidden relative bg-grid select-none">
+
+    <!-- LUCES DE FONDO AMBIENTALES -->
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
     <!-- HEADER -->
     <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/60 text-white px-10 py-4 flex items-center justify-between z-10 shadow-lg shrink-0">
@@ -21,102 +31,205 @@
                 <span class="text-white text-2xl font-extrabold">$</span>
             </div>
             <div>
-                <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300">CajeBank</h1>
-                <p class="text-xs text-emerald-400 font-semibold uppercase">Registro de Nueva Tarjeta</p>
+                <h1 class="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300">CajeBank</h1>
+                <p class="text-xs text-emerald-400 font-semibold tracking-widest uppercase">Red de Cajeros Multibanco</p>
             </div>
         </div>
-        <a href="/" class="text-xs font-bold text-slate-300 hover:text-white bg-slate-900/60 border border-slate-700/50 px-4 py-2 rounded-full transition-colors">
-            Volver al Login
-        </a>
+        <div class="flex items-center gap-3 bg-slate-900/60 border border-slate-700/50 px-4 py-2 rounded-full text-xs font-semibold text-slate-300">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>SISTEMA DE AFILIACIÓN</span>
+        </div>
     </header>
 
-    <!-- FORMULARIO DE REGISTRO -->
-    <main class="flex-1 flex flex-col items-center justify-center px-8 py-4 z-10 min-h-0 overflow-y-auto">
-        <div class="w-full max-w-md glass-card rounded-3xl p-8 shadow-2xl border border-white/20 flex flex-col gap-5">
+    <!-- ÁREA PRINCIPAL -->
+    <main class="flex-1 flex flex-col items-center justify-center px-6 py-4 z-10 overflow-y-auto">
+        <div class="w-full max-w-4xl glass-card rounded-3xl p-8 shadow-2xl border border-white/20 flex flex-col items-center relative">
             
-            <div class="text-center">
-                <h2 class="text-2xl font-black text-slate-800">Alta de Cliente</h2>
-                <p class="text-xs text-slate-500 font-semibold">Crea una tarjeta para hacer pruebas</p>
+            <div class="text-center mb-6">
+                <span class="text-xs font-bold uppercase tracking-widest text-emerald-700 bg-emerald-100 px-3.5 py-1.5 rounded-full">
+                    Apertura de Cuenta
+                </span>
+                <h2 class="text-3xl font-extrabold text-slate-800 mt-3">Registro de Nuevo Cliente</h2>
             </div>
 
-            <div id="alert-msg" class="hidden p-3 text-xs font-bold rounded-xl text-center"></div>
+            <!-- CONTENEDOR DE MENSAJES -->
+            <div id="mensaje-alerta" class="hidden w-full mb-6 p-3 text-sm font-bold rounded-xl text-center shadow-sm"></div>
 
-            <form id="form-registro" class="space-y-3">
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nombre Completo</label>
-                        <input type="text" id="nombre" required placeholder="Ej: Juan Pérez"
-                               class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <!-- FORMULARIO DE REGISTRO -->
+            <div class="w-full bg-slate-900/80 border border-slate-700 rounded-2xl p-6 shadow-inner relative overflow-hidden mb-6">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-900 via-emerald-400 to-emerald-900"></div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Nombre Completo -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre Completo</label>
+                        <input type="text" id="nombre" placeholder="Ej. Juan Pérez"
+                            class="w-full bg-slate-50 text-slate-900 font-bold px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-emerald-500 focus:outline-none transition-all">
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Cédula / RUC</label>
-                        <input type="text" id="cedula" required placeholder="1726070384"
-                               class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+
+                    <!-- Cédula -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Cédula de Identidad</label>
+                        <input type="text" id="cedula" placeholder="10 dígitos" maxlength="10"
+                            class="w-full bg-slate-50 text-slate-900 font-bold px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-emerald-500 focus:outline-none transition-all tracking-widest">
+                    </div>
+
+                    <!-- Correo Electrónico (NUEVO) -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Correo Electrónico</label>
+                        <input type="email" id="correo" placeholder="cliente@correo.com"
+                            class="w-full bg-slate-50 text-slate-900 font-bold px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-emerald-500 focus:outline-none transition-all">
+                    </div>
+
+                    <!-- Número de Cuenta (Autogenerado) -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Número de Cuenta Asignado</label>
+                        <input type="text" id="numero_cuenta" readonly
+                            class="w-full bg-slate-300 text-slate-600 font-bold px-4 py-3 rounded-xl border-2 border-slate-300 focus:outline-none cursor-not-allowed tracking-widest select-none">
+                    </div>
+
+                    <!-- Número de Tarjeta (Autogenerado) -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Número de Tarjeta (Autogenerado)</label>
+                        <input type="text" id="numero_tarjeta" readonly
+                            class="w-full bg-slate-300 text-slate-600 font-bold px-4 py-3 rounded-xl border-2 border-slate-300 focus:outline-none cursor-not-allowed tracking-widest select-none">
+                    </div>
+
+                    <!-- PIN -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">PIN de Seguridad (4 dígitos)</label>
+                        <input type="password" id="pin" placeholder="****" maxlength="4"
+                            class="w-full bg-slate-50 text-slate-900 font-bold px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-emerald-500 focus:outline-none transition-all text-center tracking-[0.5em] text-2xl">
                     </div>
                 </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Número de Tarjeta</label>
-                    <input type="text" id="tarjeta" required placeholder="Ej: 1726070384"
-                           class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 text-center tracking-widest">
+                <div class="mt-6 flex justify-between w-full text-xs font-semibold text-slate-400">
+                    <span>Asegúrese de guardar su PIN en un lugar seguro.</span>
                 </div>
+            </div>
 
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">PIN (4 dígitos)</label>
-                        <input type="password" id="pin" maxlength="4" required placeholder="1234"
-                               class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-center text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Saldo Inicial ($)</label>
-                        <input type="number" id="saldo" value="500" min="10" step="5" required
-                               class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-center text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    </div>
-                </div>
-
-                <button type="submit" id="btn-registrar" class="w-full mt-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-extrabold py-3 px-4 rounded-xl shadow-lg hover:from-emerald-700 hover:to-teal-700 transition-all">
-                    Registrar e Ingresar
+            <!-- BOTONES DE ACCIÓN -->
+            <div class="flex gap-4 w-full">
+                <button onclick="volverInicio()" class="flex-1 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 font-bold py-3.5 px-6 rounded-xl shadow-sm transition-all duration-200 active:scale-[0.98]">
+                    Volver al Inicio (ESC)
                 </button>
-            </form>
+                <button id="btn-registrar" onclick="registrar()" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-md transition-all duration-200 active:scale-[0.98]">
+                    Crear Cuenta (ENTER)
+                </button>
+            </div>
+
         </div>
     </main>
 
+    <!-- FOOTER GENERAL -->
+    <footer class="bg-slate-900/90 border-t border-slate-800 text-slate-400 px-10 py-3 flex items-center justify-between text-xs z-10 shrink-0">
+        <div class="font-bold text-slate-300">CajeBank ATM v2.4</div>
+        <div class="text-right text-slate-600">
+            © 2026 Sistema de Cajero Automático. Todos los derechos reservados.
+        </div>
+    </footer>
+
+    <!-- LÓGICA JAVASCRIPT -->
     <script>
-        document.getElementById('form-registro').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const alertDiv = document.getElementById('alert-msg');
-            
-            const payload = {
-                nombre: document.getElementById('nombre').value.trim(),
-                cedula: document.getElementById('cedula').value.trim(),
-                tarjeta: document.getElementById('tarjeta').value.trim(),
-                pin: document.getElementById('pin').value.trim(),
-                saldo: document.getElementById('saldo').value
-            };
+
+        // Generar credenciales automáticamente al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Generar Número de Tarjeta (16 dígitos, prefijo 4000)
+            let numeroTarjeta = '4000';
+            for (let i = 0; i < 12; i++) {
+                numeroTarjeta += Math.floor(Math.random() * 10).toString();
+            }
+            document.getElementById('numero_tarjeta').value = numeroTarjeta;
+
+            // 2. Generar Número de Cuenta Bancaria (10 dígitos, prefijo 10)
+            let numeroCuenta = '10';
+            for (let i = 0; i < 8; i++) {
+                numeroCuenta += Math.floor(Math.random() * 10).toString();
+            }
+            document.getElementById('numero_cuenta').value = numeroCuenta;
+        });
+        let procesando = false;
+
+        function mostrarAlerta(mensaje, esExito = false) {
+            const alerta = document.getElementById('mensaje-alerta');
+            alerta.textContent = mensaje;
+            if (esExito) {
+                alerta.className = "w-full mb-6 p-3 text-sm font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 rounded-xl text-center shadow-sm transition-all";
+            } else {
+                alerta.className = "w-full mb-6 p-3 text-sm font-bold text-red-700 bg-red-100 border border-red-300 rounded-xl text-center shadow-sm transition-all";
+            }
+            alerta.classList.remove('hidden');
+        }
+
+        async function registrar() {
+            if (procesando) return;
+
+            const nombre = document.getElementById('nombre').value.trim();
+            const cedula = document.getElementById('cedula').value.trim();
+            const correo = document.getElementById('correo').value.trim();
+            const numero_cuenta = document.getElementById('numero_cuenta').value.trim();
+            const numero_tarjeta = document.getElementById('numero_tarjeta').value.trim();
+            const pin = document.getElementById('pin').value.trim();
+
+            if (!nombre || !cedula || !correo || !numero_cuenta || !numero_tarjeta || !pin) {
+                mostrarAlerta('Todos los campos son obligatorios.', false);
+                return;
+            }
+
+            procesando = true;
+            const btn = document.getElementById('btn-registrar');
+            const textoOriginal = btn.innerText;
+            btn.innerText = "Procesando...";
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
 
             try {
                 const response = await fetch('/api/registrar_tarjeta', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        nombre: nombre,
+                        cedula: cedula,
+                        correo: correo,
+                        numero_cuenta: numero_cuenta,
+                        numero_tarjeta: numero_tarjeta,
+                        pin: pin
+                    })
                 });
 
                 const data = await response.json();
-
-                if (response.ok && data.success) {
-                    alertDiv.className = "p-3 text-xs font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 rounded-xl text-center";
-                    alertDiv.innerText = data.message;
-                    alertDiv.classList.remove('hidden');
-                    setTimeout(() => window.location.href = '/', 1500);
+                
+                if (data.success) {
+                    mostrarAlerta(data.message, true);
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
                 } else {
-                    alertDiv.className = "p-3 text-xs font-bold text-red-700 bg-red-100 border border-red-300 rounded-xl text-center";
-                    alertDiv.innerText = data.message || 'Error al procesar el registro';
-                    alertDiv.classList.remove('hidden');
+                    mostrarAlerta(data.message, false);
+                    procesando = false;
+                    btn.innerText = textoOriginal;
+                    btn.classList.remove('opacity-75', 'cursor-not-allowed');
                 }
-            } catch (err) {
-                alertDiv.className = "p-3 text-xs font-bold text-red-700 bg-red-100 border border-red-300 rounded-xl text-center";
-                alertDiv.innerText = "Error de conexión con el servidor.";
-                alertDiv.classList.remove('hidden');
+            } catch (error) {
+                mostrarAlerta('Error de conexión con el servidor.', false);
+                procesando = false;
+                btn.innerText = textoOriginal;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+        }
+
+        function volverInicio() {
+            window.location.href = '/';
+        }
+
+        // Intercepción global de teclado para facilitar navegación
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                volverInicio();
+            } else if (event.key === 'Enter') {
+                // Previene que se envíe múltiples veces si ya está procesando
+                if (!procesando) {
+                    event.preventDefault(); // Evita comportamiento por defecto si está en un input
+                    registrar();
+                }
             }
         });
     </script>
