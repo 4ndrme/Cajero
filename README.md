@@ -93,7 +93,6 @@ La aplicación estará disponible en tu navegador en `[http://127.0.0.1:5000](ht
 
 ---
 
-**Autor:** Michael Quinatoa
 **Versión:** 1.0.0
 
 ---
